@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Schibsted ASA.
+ * Copyright 2019 Pivotal, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package com.netflix.spinnaker.igor.service
+package com.netflix.spinnaker.igor.artifactory.model;
 
-import com.netflix.spinnaker.igor.model.BuildServiceProvider
-
-class BuildMasters {
-    Map<String, BuildService> map = new HashMap<String, BuildService>()
-
-    Map<String, BuildService> filteredMap(BuildServiceProvider buildServiceProvider) {
-        map.findAll { it.value.buildServiceProvider() ==  buildServiceProvider}
-    }
-
+public enum ArtifactoryRepositoryType {
+  Maven,
 }
