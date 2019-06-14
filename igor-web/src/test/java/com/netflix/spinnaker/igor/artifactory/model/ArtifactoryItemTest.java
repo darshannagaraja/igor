@@ -28,16 +28,22 @@ class ArtifactoryItemTest {
   @Test
   void toMatchableArtifact() {
     ArtifactoryItem artifact = new ArtifactoryItem();
+    artifact.setName("1.0.1.pom");
     artifact.setPath("io/pivotal/spinnaker/demo/0.1.0-dev.20+d9a14fb");
     artifact.setRepo("libs-demo-local");
 
-    Artifact matchableArtifact = artifact.toMatchableArtifact(ArtifactoryRepositoryType.Maven);
+    Artifact matchableArtifact =
+        artifact.toMatchableArtifact(ArtifactoryRepositoryType.Maven, "http://localhost:8080");
     assertThat(matchableArtifact).isNotNull();
     assertThat(matchableArtifact.getType()).isEqualTo("maven/file");
     assertThat(matchableArtifact.getReference())
         .isEqualTo("io.pivotal.spinnaker:demo:0.1.0-dev.20+d9a14fb");
     assertThat(matchableArtifact.getVersion()).isEqualTo("0.1.0-dev.20+d9a14fb");
     assertThat(matchableArtifact.getName()).isEqualTo("io.pivotal.spinnaker:demo");
+    assertThat(matchableArtifact.getLocation())
+        .isEqualTo(
+            "http://localhost:8080/webapp/#/artifacts/browse/tree/General/libs-demo-local/io/pivotal"
+                + "/spinnaker/demo/0.1.0-dev.20+d9a14fb/1.0.1.pom");
   }
 
   @Test
@@ -73,7 +79,8 @@ class ArtifactoryItemTest {
     artifacts.add(new ArtifactoryArtifact(modules));
     artifact.setArtifacts(artifacts);
 
-    Artifact matchableArtifact = artifact.toMatchableArtifact(ArtifactoryRepositoryType.Maven);
+    Artifact matchableArtifact =
+        artifact.toMatchableArtifact(ArtifactoryRepositoryType.Maven, null);
     assertThat(matchableArtifact.getMetadata().get("build")).isEqualTo(expectedBuild);
   }
 }

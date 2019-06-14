@@ -29,6 +29,7 @@ import com.netflix.spinnaker.igor.history.EchoService;
 import com.netflix.spinnaker.igor.history.model.ArtifactoryEvent;
 import com.netflix.spinnaker.igor.polling.*;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import com.netflix.spinnaker.security.AuthenticatedRequest;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collections;
@@ -152,6 +153,7 @@ public class ArtifactoryBuildMonitor
                       aqlResponse.parseBody(ArtifactoryQueryResults.class).getResults();
                   return new ArtifactPollingDelta(
                       search.getName(),
+                      search.getBaseUrl(),
                       search.getPartitionName(),
                       Collections.singletonList(
                           new ArtifactDelta(
@@ -175,15 +177,16 @@ public class ArtifactoryBuildMonitor
     for (ArtifactDelta artifactDelta : delta.items) {
       if (sendEvents) {
         for (ArtifactoryItem artifact : artifactDelta.getArtifacts()) {
-          postEvent(artifactDelta.getType(), artifact, delta.getName());
+          Artifact matchableArtifact =
+              artifact.toMatchableArtifact(artifactDelta.getType(), delta.getBaseUrl());
+          postEvent(matchableArtifact, delta.getName());
           log.debug("{} event posted", artifact);
         }
       }
     }
   }
 
-  private void postEvent(
-      ArtifactoryRepositoryType repoType, ArtifactoryItem artifact, String name) {
+  private void postEvent(Artifact artifact, String name) {
     if (!echoService.isPresent()) {
       log.warn("Cannot send build notification: Echo is not configured");
       registry
@@ -192,20 +195,24 @@ public class ArtifactoryBuildMonitor
                   "monitor", ArtifactoryBuildMonitor.class.getSimpleName()))
           .increment();
     } else {
-      Artifact matchableArtifact = artifact.toMatchableArtifact(repoType);
-      if (matchableArtifact != null) {
-        echoService
-            .get()
-            .postEvent(new ArtifactoryEvent(new ArtifactoryEvent.Content(name, matchableArtifact)));
+      if (artifact != null) {
+        AuthenticatedRequest.allowAnonymous(
+            () ->
+                echoService
+                    .get()
+                    .postEvent(new ArtifactoryEvent(new ArtifactoryEvent.Content(name, artifact))));
       }
     }
   }
 
   @Data
   static class ArtifactPollingDelta implements PollingDelta<ArtifactDelta> {
-    public static ArtifactPollingDelta EMPTY = new ArtifactPollingDelta(null, null, emptyList());
+    public static ArtifactPollingDelta EMPTY =
+        new ArtifactPollingDelta(null, null, null, emptyList());
 
     private final String name;
+
+    private final String baseUrl;
 
     @Nullable private final String repo;
 

@@ -26,12 +26,13 @@ import lombok.NoArgsConstructor;
 
 @Data
 public class ArtifactoryItem {
+  private String name;
   private String repo;
   private String path;
   private List<ArtifactoryArtifact> artifacts;
 
   @Nullable
-  public Artifact toMatchableArtifact(ArtifactoryRepositoryType repoType) {
+  public Artifact toMatchableArtifact(ArtifactoryRepositoryType repoType, String baseUrl) {
     switch (repoType) {
       case Maven:
         String[] pathParts = path.split("/");
@@ -41,13 +42,20 @@ public class ArtifactoryItem {
         String[] groupParts = Arrays.copyOfRange(pathParts, 0, pathParts.length - 2);
         String group = String.join(".", groupParts);
 
+        String location = null;
+        if (baseUrl != null) {
+          location =
+              baseUrl + "/webapp/#/artifacts/browse/tree/General/" + repo + "/" + path + "/" + name;
+        }
+
         final Artifact.ArtifactBuilder artifactBuilder =
             Artifact.builder()
                 .type("maven/file")
                 .reference(group + ":" + artifactId + ":" + version)
                 .name(group + ":" + artifactId)
                 .version(version)
-                .provenance(repo);
+                .provenance(repo)
+                .location(location);
 
         if (artifacts != null && !artifacts.isEmpty()) {
           final ArtifactoryArtifact artifact = artifacts.get(0);
